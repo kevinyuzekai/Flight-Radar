@@ -24,10 +24,16 @@ rsync -a \
 echo "[build] 体积明细"
 du -sh "$APP/Contents/Resources/app" "$APP/Contents/Resources/app/cesium" "$APP" 2>/dev/null || true
 
+echo "[build] 整包 ad-hoc 签名（先签内部可执行文件，再签整个 .app）"
+xattr -cr "$APP"
+codesign --force --sign - --timestamp=none "$APP/Contents/MacOS/FlightRadar"
+codesign --force --deep --sign - --timestamp=none "$APP"
+codesign --verify --deep --strict --verbose=2 "$APP"
+
 echo "[build] 生成压缩 DMG（UDZO + zlib-level 9）"
 STAGE="$ROOT/build/dmgstage"
 rm -rf "$STAGE"; mkdir -p "$STAGE"
-cp -R "$APP" "$STAGE/"
+ditto "$APP" "$STAGE/Flight Radar.app"
 ln -s /Applications "$STAGE/Applications"
 
 hdiutil create -volname "Flight Radar" \

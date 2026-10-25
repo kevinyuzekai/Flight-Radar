@@ -139,7 +139,7 @@ final class PanelController: NSObject, WKNavigationDelegate, WKScriptMessageHand
 
         var airportRows: [[String: Any]] = []
         for ap in store.busiestAirports(limit: 6) {
-            airportRows.append(["code": ap.code, "city": ap.city, "count": ap.count])
+            airportRows.append(["code": ap.code, "iata": ap.iata, "city": ap.city, "count": ap.count])
         }
 
         let payload: [String: Any] = [

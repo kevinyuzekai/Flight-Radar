@@ -138,6 +138,12 @@ html, body {
 #airportList li:last-child { border-bottom: 0; }
 .rank { font: 700 11px var(--mono); color: var(--cyan); width: 16px; }
 .ap-city { flex: 1; color: var(--txt); }
+".ap-code em {
+  font-style: normal;
+  color: var(--faint);
+  margin-left: 3px;
+}
+
 .ap-code { font: 10px var(--mono); color: var(--faint); }
 .ap-count { font: 600 11px var(--mono); color: var(--amber); }
 

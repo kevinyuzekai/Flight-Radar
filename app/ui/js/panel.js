@@ -15,7 +15,7 @@
 
   const store = { payload: null, home: { lat: 30.27, lon: 120.15 }, radiusKm: 30, selected: null };
 
-  let mode = 'world';
+  let mode = 'globe';
   let sceneReady = false;
   const $ = (id) => document.getElementById(id);
 
@@ -80,8 +80,9 @@
     ul.innerHTML = list.length ? '' : '<li style="color:var(--faint);font-size:11px">数据不足</li>';
     list.forEach((ap, i) => {
       const li = document.createElement('li');
+      const codes = ap.iata ? `${ap.code}<em>· ${ap.iata}</em>` : ap.code;
       li.innerHTML = `<span class="rank">${i + 1}</span><span class="ap-city">${ap.city}</span>` +
-        `<span class="ap-code">${ap.code}</span><span class="ap-count">${ap.count}</span>`;
+        `<span class="ap-code">${codes}</span><span class="ap-count">${ap.count}</span>`;
       ul.appendChild(li);
     });
   }

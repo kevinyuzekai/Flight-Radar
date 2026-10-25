@@ -200,7 +200,7 @@ final class RadarStore {
     }
 
     /// 最繁忙机场（用周边 55km 内的在空飞机数近似）
-    func busiestAirports(limit: Int = 6) -> [(code: String, city: String, count: Int)] {
+    func busiestAirports(limit: Int = 6) -> [(code: String, iata: String, city: String, count: Int)] {
         lock.lock()
         let list = aircraft
         lock.unlock()
@@ -212,10 +212,10 @@ final class RadarStore {
             }
         }
 
-        var out: [(code: String, city: String, count: Int)] = []
+        var out: [(code: String, iata: String, city: String, count: Int)] = []
         for (code, n) in counts {
             if let ap = Airports.all.first(where: { $0.code == code }) {
-                out.append((ap.code, ap.city, n))
+                out.append((ap.code, ap.iata, ap.city, n))
             }
         }
         out.sort { $0.count > $1.count }
@@ -226,47 +226,48 @@ final class RadarStore {
 // MARK: - 机场（用于最繁忙列表）
 
 struct Airport {
-    let code: String
+    let code: String      // ICAO 四字码
+    let iata: String      // IATA 三字码
     let city: String
     let pos: LatLon
 }
 
 enum Airports {
     static let all: [Airport] = [
-        Airport(code: "ZSPD", city: "上海浦东", pos: LatLon(lat: 31.14, lon: 121.80)),
-        Airport(code: "ZSSS", city: "上海虹桥", pos: LatLon(lat: 31.20, lon: 121.34)),
-        Airport(code: "ZBAA", city: "北京首都", pos: LatLon(lat: 40.08, lon: 116.58)),
-        Airport(code: "ZBAD", city: "北京大兴", pos: LatLon(lat: 39.51, lon: 116.41)),
-        Airport(code: "ZGGG", city: "广州白云", pos: LatLon(lat: 23.39, lon: 113.30)),
-        Airport(code: "ZGSZ", city: "深圳宝安", pos: LatLon(lat: 22.64, lon: 113.81)),
-        Airport(code: "ZUUU", city: "成都双流", pos: LatLon(lat: 30.58, lon: 103.95)),
-        Airport(code: "ZSHC", city: "杭州萧山", pos: LatLon(lat: 30.23, lon: 120.43)),
-        Airport(code: "ZSNJ", city: "南京禄口", pos: LatLon(lat: 31.74, lon: 118.86)),
-        Airport(code: "ZHHH", city: "武汉天河", pos: LatLon(lat: 30.78, lon: 114.21)),
-        Airport(code: "ZUCK", city: "重庆江北", pos: LatLon(lat: 29.72, lon: 106.64)),
-        Airport(code: "ZLXY", city: "西安咸阳", pos: LatLon(lat: 34.45, lon: 108.75)),
-        Airport(code: "ZPPP", city: "昆明长水", pos: LatLon(lat: 25.10, lon: 102.93)),
-        Airport(code: "ZUTF", city: "成都天府", pos: LatLon(lat: 30.31, lon: 104.44)),
-        Airport(code: "RJTT", city: "东京羽田", pos: LatLon(lat: 35.55, lon: 139.78)),
-        Airport(code: "RJAA", city: "东京成田", pos: LatLon(lat: 35.76, lon: 140.39)),
-        Airport(code: "RKSI", city: "首尔仁川", pos: LatLon(lat: 37.46, lon: 126.44)),
-        Airport(code: "VHHH", city: "香港赤鱲角", pos: LatLon(lat: 22.31, lon: 113.91)),
-        Airport(code: "RCTP", city: "台北桃园", pos: LatLon(lat: 25.08, lon: 121.23)),
-        Airport(code: "WSSS", city: "新加坡樟宜", pos: LatLon(lat: 1.36, lon: 103.99)),
-        Airport(code: "VTBS", city: "曼谷素万那普", pos: LatLon(lat: 13.69, lon: 100.75)),
-        Airport(code: "VIDP", city: "德里英迪拉", pos: LatLon(lat: 28.56, lon: 77.10)),
-        Airport(code: "OMDB", city: "迪拜", pos: LatLon(lat: 25.25, lon: 55.36)),
-        Airport(code: "LHR", city: "伦敦希思罗", pos: LatLon(lat: 51.47, lon: -0.45)),
-        Airport(code: "CDG", city: "巴黎戴高乐", pos: LatLon(lat: 49.01, lon: 2.55)),
-        Airport(code: "FRA", city: "法兰克福", pos: LatLon(lat: 50.03, lon: 8.57)),
-        Airport(code: "AMS", city: "阿姆斯特丹", pos: LatLon(lat: 52.31, lon: 4.76)),
-        Airport(code: "IST", city: "伊斯坦布尔", pos: LatLon(lat: 41.26, lon: 28.74)),
-        Airport(code: "JFK", city: "纽约肯尼迪", pos: LatLon(lat: 40.64, lon: -73.78)),
-        Airport(code: "LAX", city: "洛杉矶", pos: LatLon(lat: 33.94, lon: -118.41)),
-        Airport(code: "ORD", city: "芝加哥", pos: LatLon(lat: 41.98, lon: -87.90)),
-        Airport(code: "ATL", city: "亚特兰大", pos: LatLon(lat: 33.64, lon: -84.43)),
-        Airport(code: "DFW", city: "达拉斯", pos: LatLon(lat: 32.90, lon: -97.04)),
-        Airport(code: "YSSY", city: "悉尼", pos: LatLon(lat: -33.94, lon: 151.18)),
-        Airport(code: "NZAA", city: "奥克兰", pos: LatLon(lat: -37.01, lon: 174.79)),
+        Airport(code: "ZSPD", iata: "PVG", city: "上海浦东", pos: LatLon(lat: 31.14, lon: 121.80)),
+        Airport(code: "ZSSS", iata: "SHA", city: "上海虹桥", pos: LatLon(lat: 31.20, lon: 121.34)),
+        Airport(code: "ZBAA", iata: "PEK", city: "北京首都", pos: LatLon(lat: 40.08, lon: 116.58)),
+        Airport(code: "ZBAD", iata: "PKX", city: "北京大兴", pos: LatLon(lat: 39.51, lon: 116.41)),
+        Airport(code: "ZGGG", iata: "CAN", city: "广州白云", pos: LatLon(lat: 23.39, lon: 113.30)),
+        Airport(code: "ZGSZ", iata: "SZX", city: "深圳宝安", pos: LatLon(lat: 22.64, lon: 113.81)),
+        Airport(code: "ZUUU", iata: "CTU", city: "成都双流", pos: LatLon(lat: 30.58, lon: 103.95)),
+        Airport(code: "ZSHC", iata: "HGH", city: "杭州萧山", pos: LatLon(lat: 30.23, lon: 120.43)),
+        Airport(code: "ZSNJ", iata: "NKG", city: "南京禄口", pos: LatLon(lat: 31.74, lon: 118.86)),
+        Airport(code: "ZHHH", iata: "WUH", city: "武汉天河", pos: LatLon(lat: 30.78, lon: 114.21)),
+        Airport(code: "ZUCK", iata: "CKG", city: "重庆江北", pos: LatLon(lat: 29.72, lon: 106.64)),
+        Airport(code: "ZLXY", iata: "XIY", city: "西安咸阳", pos: LatLon(lat: 34.45, lon: 108.75)),
+        Airport(code: "ZPPP", iata: "KMG", city: "昆明长水", pos: LatLon(lat: 25.10, lon: 102.93)),
+        Airport(code: "ZUTF", iata: "TFU", city: "成都天府", pos: LatLon(lat: 30.31, lon: 104.44)),
+        Airport(code: "RJTT", iata: "HND", city: "东京羽田", pos: LatLon(lat: 35.55, lon: 139.78)),
+        Airport(code: "RJAA", iata: "NRT", city: "东京成田", pos: LatLon(lat: 35.76, lon: 140.39)),
+        Airport(code: "RKSI", iata: "ICN", city: "首尔仁川", pos: LatLon(lat: 37.46, lon: 126.44)),
+        Airport(code: "VHHH", iata: "HKG", city: "香港赤鱲角", pos: LatLon(lat: 22.31, lon: 113.91)),
+        Airport(code: "RCTP", iata: "TPE", city: "台北桃园", pos: LatLon(lat: 25.08, lon: 121.23)),
+        Airport(code: "WSSS", iata: "SIN", city: "新加坡樟宜", pos: LatLon(lat: 1.36, lon: 103.99)),
+        Airport(code: "VTBS", iata: "BKK", city: "曼谷素万那普", pos: LatLon(lat: 13.69, lon: 100.75)),
+        Airport(code: "VIDP", iata: "DEL", city: "德里英迪拉", pos: LatLon(lat: 28.56, lon: 77.10)),
+        Airport(code: "OMDB", iata: "DXB", city: "迪拜", pos: LatLon(lat: 25.25, lon: 55.36)),
+        Airport(code: "EGLL", iata: "LHR", city: "伦敦希思罗", pos: LatLon(lat: 51.47, lon: -0.45)),
+        Airport(code: "LFPG", iata: "CDG", city: "巴黎戴高乐", pos: LatLon(lat: 49.01, lon: 2.55)),
+        Airport(code: "EDDF", iata: "FRA", city: "法兰克福", pos: LatLon(lat: 50.03, lon: 8.57)),
+        Airport(code: "EHAM", iata: "AMS", city: "阿姆斯特丹", pos: LatLon(lat: 52.31, lon: 4.76)),
+        Airport(code: "LTFM", iata: "IST", city: "伊斯坦布尔", pos: LatLon(lat: 41.26, lon: 28.74)),
+        Airport(code: "KJFK", iata: "JFK", city: "纽约肯尼迪", pos: LatLon(lat: 40.64, lon: -73.78)),
+        Airport(code: "KLAX", iata: "LAX", city: "洛杉矶", pos: LatLon(lat: 33.94, lon: -118.41)),
+        Airport(code: "KORD", iata: "ORD", city: "芝加哥", pos: LatLon(lat: 41.98, lon: -87.90)),
+        Airport(code: "KATL", iata: "ATL", city: "亚特兰大", pos: LatLon(lat: 33.64, lon: -84.43)),
+        Airport(code: "KDFW", iata: "DFW", city: "达拉斯", pos: LatLon(lat: 32.90, lon: -97.04)),
+        Airport(code: "YSSY", iata: "SYD", city: "悉尼", pos: LatLon(lat: -33.94, lon: 151.18)),
+        Airport(code: "NZAA", iata: "AKL", city: "奥克兰", pos: LatLon(lat: -37.01, lon: 174.79)),
     ]
 }

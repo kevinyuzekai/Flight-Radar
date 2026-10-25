@@ -165,13 +165,8 @@
     const bAtmos = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, bAtmos); gl.bufferData(gl.ARRAY_BUFFER, atmos, gl.STATIC_DRAW);
 
-    // 平面模式：整屏四边形（位置 x,y + UV u,v），TRIANGLE_STRIP
-    const flatQuad = new Float32Array([
-      -1, -1, 0, 0,   // 左下 → 南
-       1, -1, 1, 0,   // 右下
-      -1,  1, 0, 1,   // 左上 → 北
-       1,  1, 1, 1,
-    ]);
+    // 平面模式：四边形每帧更新（位置 x,y + UV u,v），TRIANGLE_STRIP
+    const flatQuad = new Float32Array(16);
     const bFlat = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, bFlat);
     gl.bufferData(gl.ARRAY_BUFFER, flatQuad, gl.STATIC_DRAW);
@@ -225,6 +220,9 @@
       targetLat: opts.lat || 30, targetLon: opts.lon || 120,
       spin: opts.spin === true,
       flat: !!opts.flat,
+      // 平面视图的相机：中心经纬度 + 经度跨度（度）
+      flatLon: 0, flatLat: 0, spanLon: 360,
+      flatTargetLon: 0, flatTargetLat: 0, flatTargetSpan: 360,
       drag: false,
       isReady: () => earthReady,
     };
@@ -247,7 +245,27 @@
     const cam = M.camera(s);
 
     if (s.flat) {
-      // ---- 平面全球模式：整屏贴图，不做球面投影 ----
+      // ---- 平面模式：按可视范围取贴图子矩形，保持等距圆柱比例 ----
+      const span = Math.max(4, Math.min(360, s.spanLon));
+      const lonMin = s.flatLon - span / 2;
+      const latSpan = Math.min(180, span * (h / Math.max(1, w)));
+      const latMax = Math.min(90, s.flatLat + latSpan / 2);
+      const latMin = Math.max(-90, latMax - latSpan);
+      const u0 = (lonMin + 180) / 360, u1 = (lonMin + span + 180) / 360;
+      const v0 = (latMin + 90) / 180, v1 = (latMax + 90) / 180;
+      // 屏幕纵向占多少（NDC）：宽度铺满，高度按 2:1 的经纬比例
+      const halfH = Math.min(1, (h / w) * (latSpan / span));
+
+      flatQuad.set([
+        -1, -halfH, u0, v0,
+         1, -halfH, u1, v0,
+        -1,  halfH, u0, v1,
+         1,  halfH, u1, v1,
+      ]);
+      gl.bindBuffer(gl.ARRAY_BUFFER, s.bFlat);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, flatQuad);
+      s.flatView = { lonMin, span, latMin, latMax, halfH };
+
       const FP = s.P.flat;
       gl.useProgram(FP.p);
       gl.disable(gl.DEPTH_TEST);

@@ -64,6 +64,13 @@
     return [1, 1, 1];
   }
 
+  function wrapLon(lon) {
+    let v = lon;
+    while (v > 180) v -= 360;
+    while (v < -180) v += 360;
+    return v;
+  }
+
   function altitudeMeters(p) {
     return p.alt === 'ground' ? 0 : Math.max(0, (Number(p.alt) || 0) * 0.3048);
   }
@@ -138,6 +145,13 @@
     if (!s) return;
     const now = Date.now();
 
+    // 平面相机平滑（拖动/缩放的手感来自这里）
+    if (s.flat) {
+      s.spanLon += (s.flatTargetSpan - s.spanLon) * 0.18;
+      s.flatLon += (s.flatTargetLon - s.flatLon) * 0.18;
+      s.flatLat += (s.flatTargetLat - s.flatLat) * 0.18;
+    }
+
     // 相机平滑 + 自转
     if (state.followHex) {
       const e = planeIndex.get(state.followHex);
@@ -151,9 +165,9 @@
       s.targetLon += 0.02;
       if (s.targetLon > 180) s.targetLon -= 360;
     }
-    s.lat += (s.targetLat - s.lat) * 0.15;
-    s.lon += (s.targetLon - s.lon) * 0.15;
-    s.dist += (s.targetDist - s.dist) * 0.15;
+    s.lat += (s.targetLat - s.lat) * 0.28;
+    s.lon += (s.targetLon - s.lon) * 0.28;
+    s.dist += (s.targetDist - s.dist) * 0.22;
 
     // 先算相机，再按可见性生成精灵
     const camNow = s.flat ? null : G.camera(s);
@@ -166,9 +180,16 @@
 
       let sx, sy, sz = 0;
       if (s.flat) {
-        // 平面全球：经度 → x，纬度 → y，全部可见
-        sx = ((e.disp.lon + 180) / 360) * w;
-        sy = ((90 - e.disp.lat) / 180) * h;
+        // 平面视图：按当前可视经纬范围换算，超出画面就跳过
+        const fv = s.flatView;
+        if (!fv) continue;
+        const rel = ((e.disp.lon - fv.lonMin) % 360 + 360) % 360;
+        if (rel > fv.span) { e.hidden = true; continue; }
+        sx = (rel / fv.span) * w;
+        sy = ((fv.latMax - e.disp.lat) / (fv.latMax - fv.latMin)) * (0.5 - fv.halfH / 2) * h / 0.5 / 2;
+        // 上面的写法容易绕；直接用 NDC 高度换算
+        sy = ((fv.latMax - e.disp.lat) / (fv.latMax - fv.latMin)) * (fv.halfH * h);
+        sy = (h - fv.halfH * h) / 2 + sy;
         e.hidden = false;
       } else {
         const r = 1 + altitudeMeters(e.plane) / 6371000;
@@ -217,8 +238,13 @@
     const w = s.canvas.width, h = s.canvas.height;
     let x, y, vis = true;
     if (s.flat) {
-      x = ((home.lon + 180) / 360) * w;
-      y = ((90 - home.lat) / 180) * h;
+      const fv = s.flatView;
+      if (!fv) { el.classList.add('hidden'); return; }
+      const rel = ((home.lon - fv.lonMin) % 360 + 360) % 360;
+      if (rel > fv.span) { el.classList.add('hidden'); return; }
+      x = (rel / fv.span) * w;
+      y = ((fv.latMax - home.lat) / (fv.latMax - fv.latMin)) * (fv.halfH * h);
+      y = (h - fv.halfH * h) / 2 + y;
     } else {
       const pt = GL.latLonToXYZ(home.lat, home.lon, 1);
       vis = GL.isVisible(cam.eye, pt, 1.0);
@@ -236,12 +262,9 @@
 
   function setHome(lat, lon, name) {
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    // 只更新标记与状态，不移动相机 —— 否则每轮数据推送都会把用户拖到的视角拽回观察点
     state.home = { lat, lon };
     state.homeName = name || state.homeName;
-    if (state.globe) {
-      state.globe.targetLat = lat;
-      state.globe.targetLon = lon;
-    }
   }
 
   function startRenderLoop() {
@@ -343,6 +366,15 @@
       lastX = e.clientX; lastY = e.clientY;
       moved += Math.abs(dx) + Math.abs(dy);
       const s = state.globe;
+      if (s.flat) {
+        const fv = s.flatView || { span: s.spanLon, latMin: -90, latMax: 90 };
+        const pxPerDegLon = state.canvas.clientWidth / Math.max(1, fv.span);
+        const latSpan = Math.max(1, fv.latMax - fv.latMin);
+        const pxPerDegLat = (fv.halfH * state.canvas.clientHeight) / latSpan;
+        s.flatTargetLon = wrapLon(s.flatTargetLon - dx / pxPerDegLon);
+        s.flatTargetLat = Math.max(-85, Math.min(85, s.flatTargetLat + dy / Math.max(0.2, pxPerDegLat)));
+        return;
+      }
       s.targetLon -= dx * 0.3;
       s.targetLat = Math.max(-80, Math.min(80, s.targetLat + dy * 0.3));
       if (s.targetLon > 180) s.targetLon -= 360;
@@ -360,6 +392,11 @@
     c.addEventListener('wheel', (e) => {
       e.preventDefault();
       const s = state.globe;
+      if (s.flat) {
+        const f = Math.exp(Math.sign(e.deltaY) * 0.16);
+        s.flatTargetSpan = Math.max(6, Math.min(360, s.flatTargetSpan * f));
+        return;
+      }
       s.targetDist = Math.max(1.06, Math.min(16.0, s.targetDist + Math.sign(e.deltaY) * 0.25));
       if (state.followHex) unfollow();
       s.spin = false;
@@ -367,6 +404,13 @@
 
     c.addEventListener('dblclick', () => {
       if (state.selectedHex) select(null);
+      const s = state.globe;
+      if (s && s.flat) {
+        s.flatTargetSpan = 360;
+        s.flatTargetLon = 0;
+        s.flatTargetLat = 0;
+        return;
+      }
       flyHome();
     });
   }
@@ -406,8 +450,14 @@
     state,
     setFlat(on) {
       if (!state.globe) return;
-      state.globe.flat = !!on;
-      if (on) state.followHex = null;
+      const s = state.globe;
+      s.flat = !!on;
+      if (on) {
+        state.followHex = null;
+        s.flatTargetSpan = 360;
+        s.flatTargetLon = 0;
+        s.flatTargetLat = 0;
+      }
     },
     get isFlat() { return !!(state.globe && state.globe.flat); },
     setHome,

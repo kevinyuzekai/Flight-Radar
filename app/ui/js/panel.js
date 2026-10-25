@@ -114,11 +114,12 @@
     $('airportPanel').classList.toggle('hidden', m !== 'airports');
     const gw = document.querySelector('.globe-wrap');
     gw.classList.toggle('collapsed', m === 'airports');
+    if (sceneReady) FR.scene.setFlat(m === 'world');
     const ov = gw.querySelector('.globe-overlay'); if (ov) ov.style.display = m === 'airports' ? 'none' : '';
     gw.style.height = m === 'airports' ? '44px' : '';
     if (m !== 'airports') setTimeout(() => window.dispatchEvent(new Event('resize')), 30);
     document.querySelector('.list-wrap').style.display = m === 'airports' ? 'none' : '';
-    $('btnMode').textContent = m === 'airports' ? '✈️' : '🌍';
+    $('btnMode').textContent = m === 'airports' ? '✈️' : (m === 'world' ? '🗺️' : '🌍');
     if (m === 'airports') renderAirports();
   }
 
@@ -174,7 +175,11 @@
 
   /* ---------- 交互 ---------- */
   function bind() {
-    $('btnMode').onclick = () => setMode(mode === 'globe' ? 'airports' : 'globe');
+    $('btnMode').onclick = () => {
+      const next = mode === 'globe' ? 'world' : (mode === 'world' ? 'airports' : 'globe');
+      setMode(next);
+      toast(next === 'world' ? '全球视图 · 同时显示所有飞机' : (next === 'airports' ? '最繁忙机场' : '三维地球'));
+    };
     $('btnAlert').onclick = () => {
       const on = !$('btnAlert').classList.contains('on');
       $('btnAlert').classList.toggle('on', on);

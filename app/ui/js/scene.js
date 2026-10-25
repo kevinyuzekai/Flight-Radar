@@ -76,7 +76,7 @@
     state.canvas = canvas;
 
     resize();
-    state.globe = G.create(canvas, { lat: state.home.lat, lon: state.home.lon, dist: 5.0 });
+    state.globe = G.create(canvas, { lat: state.home.lat, lon: state.home.lon, dist: 7.0 });
     bindInteractions();
     window.addEventListener('resize', resize);
     return state.globe;
@@ -144,7 +144,7 @@
       if (e) {
         s.targetLat = Math.max(-80, Math.min(80, e.disp.lat));
         s.targetLon = e.disp.lon;
-        s.targetDist = 3.1;
+        s.targetDist = 4.6;
         s.spin = false;
       }
     } else if (s.spin && !s.drag) {
@@ -156,33 +156,41 @@
     s.dist += (s.targetDist - s.dist) * 0.15;
 
     // 先算相机，再按可见性生成精灵
-    const camNow = G.camera(s);
+    const camNow = s.flat ? null : G.camera(s);
     const w = s.canvas.width, h = s.canvas.height;
     const dpr = state.dpr;
     const out = [];
 
     for (const e of planeIndex.values()) {
       advance(e, now);
-      const r = 1 + altitudeMeters(e.plane) / 6371000;
-      const pt = GL.latLonToXYZ(e.disp.lat, e.disp.lon, r);
 
-      // 地平线剔除：球背面的目标直接跳过
-      const visible = GL.isVisible(camNow.eye, pt, 1.0);
-      e.hidden = !visible;
-      if (!visible) continue;
-
-      const scr = GL.project(camNow.vp, pt, w, h);
-      if (!scr) continue;
+      let sx, sy;
+      if (s.flat) {
+        // 平面全球：经度 → x，纬度 → y，全部可见
+        sx = ((e.disp.lon + 180) / 360) * w;
+        sy = ((90 - e.disp.lat) / 180) * h;
+        e.hidden = false;
+      } else {
+        const r = 1 + altitudeMeters(e.plane) / 6371000;
+        const pt = GL.latLonToXYZ(e.disp.lat, e.disp.lon, r);
+        // 地平线剔除：球背面的目标直接跳过
+        if (!GL.isVisible(camNow.eye, pt, 1.0)) { e.hidden = true; continue; }
+        e.hidden = false;
+        const scr = GL.project(camNow.vp, pt, w, h);
+        if (!scr) continue;
+        sx = scr.x; sy = scr.y;
+      }
 
       const cls = e.plane.cls || 'narrowbody';
       const rect = classRect(cls);
       const isSel = e.plane.hex === state.selectedHex;
       const isWatch = !!e.plane.watched;
-      const zoom = Math.max(0.85, Math.min(1.3, 3.4 / s.dist));
-      const size = (isSel ? 11 : 8.5) * dpr * zoom * 0.55;
+      const zoom = s.flat ? 1 : Math.max(0.9, Math.min(1.35, 8.0 / s.dist));
+      const base = s.flat ? 3.4 : 7.5;
+      const size = (isSel ? base * 1.35 : base) * dpr * zoom;
 
       out.push({
-        x: scr.x, y: scr.y, size,
+        x: sx, y: sy, size,
         rot: ((e.plane.track || 0) * Math.PI) / 180,
         alpha: e.age > 25000 ? 0.45 : 1,
         color: isSel ? [1, 0.36, 0.30] : (isWatch ? [0.62, 1, 0.43] : altColor(e.plane.alt)),
@@ -238,7 +246,7 @@
     state.followHex = null;
     s.targetLat = lat != null ? lat : state.home.lat;
     s.targetLon = lon != null ? lon : state.home.lon;
-    s.targetDist = 5.0;
+    s.targetDist = 7.0;
     s.spin = false;
   }
 
@@ -316,7 +324,7 @@
     c.addEventListener('wheel', (e) => {
       e.preventDefault();
       const s = state.globe;
-      s.targetDist = Math.max(2.4, Math.min(9.0, s.targetDist + Math.sign(e.deltaY) * 0.25));
+      s.targetDist = Math.max(3.2, Math.min(14.0, s.targetDist + Math.sign(e.deltaY) * 0.25));
       if (state.followHex) unfollow();
       s.spin = false;
     }, { passive: false });
@@ -360,6 +368,12 @@
     restoreView,
     planeIndex,
     state,
+    setFlat(on) {
+      if (!state.globe) return;
+      state.globe.flat = !!on;
+      if (on) state.followHex = null;
+    },
+    get isFlat() { return !!(state.globe && state.globe.flat); },
     get followHex() { return state.followHex; },
     get fps() { return Math.round(fps); },
   };

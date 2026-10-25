@@ -1,8 +1,8 @@
 {
   "name": "flight-radar",
   "productName": "Flight Radar",
-  "version": "0.2.2",
-  "description": "Flight Radar 0.2.2 · macOS 菜单栏实时航班雷达（ADS-B / 轻量 WebGL 地球 / 拍机警报）",
+  "version": "0.2.3",
+  "description": "Flight Radar 0.2.3 · macOS 菜单栏实时航班雷达（ADS-B / 全球视图 / 拍机警报）",
   "author": "zekaiyu",
   "license": "MIT",
   "scripts": {

@@ -32,6 +32,17 @@
       gl_FragColor = vec4(c,1.0);
     }`;
 
+  const VS_FLAT = `
+    attribute vec2 aPos; attribute vec2 aUV;
+    varying vec2 vUV;
+    void main(){ vUV = aUV; gl_Position = vec4(aPos, 0.0, 1.0); }`;
+
+  const FS_FLAT = `
+    precision mediump float;
+    uniform sampler2D uTex;
+    varying vec2 vUV;
+    void main(){ gl_FragColor = vec4(texture2D(uTex, vUV).rgb, 1.0); }`;
+
   const VS_ATMOS = `
     attribute vec3 aPos; uniform mat4 uVP;
     varying vec3 vP;
@@ -123,7 +134,7 @@
 
   // 每顶点: corner2 center2 size2 rot1 alpha1 color4 uv2 = 14 floats
   const V_FLOATS = 14;
-  const MAX_SPRITES = 3000;
+  const MAX_SPRITES = 15000;
 
   M.create = function (canvas, opts) {
     opts = opts || {};
@@ -136,6 +147,7 @@
       atmos: program(gl, VS_ATMOS, FS_ATMOS, ['aPos']),
       sprite: program(gl, VS_SPRITE, FS_SPRITE,
         ['aCorner', 'aCenter', 'aSize', 'aRot', 'aAlpha', 'aColor', 'aUV']),
+      flat: program(gl, VS_FLAT, FS_FLAT, ['aPos', 'aUV']),
     };
 
     const bPos = gl.createBuffer();
@@ -153,7 +165,18 @@
     const bAtmos = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, bAtmos); gl.bufferData(gl.ARRAY_BUFFER, atmos, gl.STATIC_DRAW);
 
-    const spriteData = new Float32Array(MAX_SPRITES * 4 * V_FLOATS);
+    // 平面模式：整屏四边形（位置 x,y + UV u,v），TRIANGLE_STRIP
+    const flatQuad = new Float32Array([
+      -1, -1, 0, 0,   // 左下 → 南
+       1, -1, 1, 0,   // 右下
+      -1,  1, 0, 1,   // 左上 → 北
+       1,  1, 1, 1,
+    ]);
+    const bFlat = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, bFlat);
+    gl.bufferData(gl.ARRAY_BUFFER, flatQuad, gl.STATIC_DRAW);
+
+    const spriteData = new Float32Array(MAX_SPRITES * 6 * V_FLOATS);
     const bSprite = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, bSprite);
     gl.bufferData(gl.ARRAY_BUFFER, spriteData.byteLength, gl.DYNAMIC_DRAW);
@@ -193,14 +216,15 @@
 
     return {
       gl, canvas, P,
-      bPos, bNor, bUV, bIdx, bAtmos, bSprite,
+      bPos, bNor, bUV, bIdx, bAtmos, bSprite, bFlat,
       sphereCount: sphere.count, spriteData,
       texEarth, texAtlas,
       lat: opts.lat || 30, lon: opts.lon || 120,
-      dist: opts.dist || 2.6,
-      targetDist: opts.dist || 2.6,
+      dist: opts.dist || 7.0,
+      targetDist: opts.dist || 7.0,
       targetLat: opts.lat || 30, targetLon: opts.lon || 120,
       spin: opts.spin === true,
+      flat: !!opts.flat,
       drag: false,
       isReady: () => earthReady,
     };
@@ -221,6 +245,26 @@
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     const cam = M.camera(s);
+
+    if (s.flat) {
+      // ---- 平面全球模式：整屏贴图，不做球面投影 ----
+      const FP = s.P.flat;
+      gl.useProgram(FP.p);
+      gl.disable(gl.DEPTH_TEST);
+      gl.disable(gl.CULL_FACE);
+      gl.disable(gl.BLEND);
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, s.texEarth);
+      gl.uniform1i(FP.u.uTex, 0);
+      gl.bindBuffer(gl.ARRAY_BUFFER, s.bFlat);
+      gl.enableVertexAttribArray(FP.a.aPos);
+      gl.vertexAttribPointer(FP.a.aPos, 2, gl.FLOAT, false, 16, 0);
+      gl.enableVertexAttribArray(FP.a.aUV);
+      gl.vertexAttribPointer(FP.a.aUV, 2, gl.FLOAT, false, 16, 8);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      drawSprites(s, sprites, w, h);
+      return cam;
+    }
 
     // 地球
     const SP = s.P.sphere;
@@ -261,17 +305,23 @@
     gl.drawElements(gl.TRIANGLES, s.sphereCount, gl.UNSIGNED_SHORT, 0);
     gl.depthMask(true); gl.disable(gl.CULL_FACE);
 
-    // 飞机精灵
+    drawSprites(s, sprites, w, h);
+    return cam;
+  };
+
+  function drawSprites(s, sprites, w, h) {
+    const gl = s.gl;
     const list = sprites || [];
     if (list.length) {
       const n = Math.min(list.length, MAX_SPRITES);
       const arr = s.spriteData;
       let o = 0;
-      const corners = [[-1, -1], [1, -1], [-1, 1], [1, 1]];
-      const uvs = [[0, 1], [1, 1], [0, 0], [1, 0]];
+      // 6 顶点：两个三角形组成一个四边形（用 TRIANGLES 必须这样）
+      const corners = [[-1, -1], [1, -1], [-1, 1], [-1, 1], [1, -1], [1, 1]];
+      const uvs = [[0, 1], [1, 1], [0, 0], [0, 0], [1, 1], [1, 0]];
       for (let i = 0; i < n; i++) {
         const sp = list[i], col = sp.color;
-        for (let c = 0; c < 4; c++) {
+        for (let c = 0; c < 6; c++) {
           arr[o++] = corners[c][0]; arr[o++] = corners[c][1];
           arr[o++] = sp.x; arr[o++] = sp.y;
           arr[o++] = sp.size; arr[o++] = sp.size;
@@ -307,11 +357,10 @@
       gl.disable(gl.DEPTH_TEST);
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
-      gl.drawArrays(gl.TRIANGLES, 0, n * 4);
+      gl.drawArrays(gl.TRIANGLES, 0, n * 6);
       gl.enable(gl.DEPTH_TEST);
     }
-    return cam;
-  };
+  }
 
   root.Globe = M;
 })(window);

@@ -5,12 +5,11 @@
  */
 (function () {
   /**
-   * 地球与飞机：与桌面版 Flight Radar 1.0.0 共用同一套 scene.js / util.js（Cesium）。
+   * 地球与飞机：由 scene.js（轻量 WebGL 地球）绘制，数据来自 sources.js。
    * 合并、外推（只前进不回退）、FR24 图标、选中变红、按高度着色的远景点、标签 LOD 全部一致；
    * 这里只负责把原生推送的数据转成 1.0.0 的飞机结构并喂给 FR.scene。
    */
   const FR = window.FR;
-  const HOME_HEIGHT = 1.2e6;   // 默认视角高度（米），以家为中心
   const LIST_MAX = 24;
   const CLASS_ORDER = ['a380', 'b747', 'widebody', 'a330', 'narrowbody', 'regional', 'turboprop', 'light', 'heli', 'fighter'];
 
@@ -37,13 +36,8 @@
 
   function goHome() {
     if (!sceneReady) return;
-    const C = window.Cesium;
     FR.scene.unfollow();
-    FR.scene.state.viewer.camera.flyTo({
-      destination: C.Cartesian3.fromDegrees(store.home.lon, store.home.lat, HOME_HEIGHT),
-      orientation: { heading: 0, pitch: C.Math.toRadians(-90), roll: 0 },
-      duration: 0.8,
-    });
+    FR.scene.flyHome(store.home.lat, store.home.lon);
   }
 
   /* ---------- 列表 / 计数（同一份 store） ---------- */
@@ -95,18 +89,8 @@
    * 选中 = 跟踪（与 1.0.0 相同的 FR.scene.follow：每帧以飞机为原点 lookAtTransform，飞机始终在地球视窗正中）。
    * 滚轮会退出跟踪（1.0.0 行为）；再点一次列表里的同一架重新居中；取消选中回到之前的视角。
    */
-  let savedView = null;
-  function saveView() {
-    const cam = FR.scene.state.viewer.camera;
-    savedView = { destination: cam.positionWC.clone(), orientation: { heading: cam.heading, pitch: cam.pitch, roll: cam.roll } };
-  }
-  function restoreView() {
-    const cam = FR.scene.state.viewer.camera;
-    cam.lookAtTransform(window.Cesium.Matrix4.IDENTITY);
-    if (savedView) cam.flyTo(Object.assign({ duration: 0.8 }, savedView));
-    else goHome();
-    savedView = null;
-  }
+  function saveView() { FR.scene.saveView(); }
+  function restoreView() { FR.scene.restoreView(); }
   function select(hex) {
     if (!sceneReady) { store.selected = hex || null; renderPlanes(); return; }
     const p = hex && FR.sources.byHex.get(hex);
@@ -130,7 +114,6 @@
     $('airportPanel').classList.toggle('hidden', m !== 'airports');
     const gw = document.querySelector('.globe-wrap');
     gw.classList.toggle('collapsed', m === 'airports');
-    ['cesiumContainer'].forEach(id => { const e = $(id); if (e) e.style.display = m === 'airports' ? 'none' : ''; });
     const ov = gw.querySelector('.globe-overlay'); if (ov) ov.style.display = m === 'airports' ? 'none' : '';
     gw.style.height = m === 'airports' ? '44px' : '';
     if (m !== 'airports') setTimeout(() => window.dispatchEvent(new Event('resize')), 30);
@@ -241,11 +224,7 @@
     });
     FR.scene.onFollowChange((hex) => { if (!hex && store.selected) toast('已退出跟踪 · 再点列表可重新居中'); });
     FR.scene.startRenderLoop();
-    const C = window.Cesium;
-    FR.scene.state.viewer.camera.setView({
-      destination: C.Cartesian3.fromDegrees(store.home.lon, store.home.lat, HOME_HEIGHT),
-      orientation: { heading: 0, pitch: C.Math.toRadians(-90), roll: 0 },
-    });
+    FR.scene.flyHome(store.home.lat, store.home.lon);
     // 全球飞机：与 1.0.0 相同的 sources.js（adsb.lol 全球 + adsb.fi 视野网格，双源按定位时刻合并，10s 轮询）
     FR.sources.setViewProvider(() => FR.scene.currentRect());
     FR.sources.onChange((planes) => {

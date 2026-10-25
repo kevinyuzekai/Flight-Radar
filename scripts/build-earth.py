@@ -14,7 +14,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, 'app/ui/tex/earth.jpg')
 MASK = os.path.join(ROOT, 'app/ui/tex/landmask.png')
 
-W, H = 2048, 1024
+W, H = 1024, 512
 Z = 3                      # 8x8 瓦片（体积优先，地表细节够用）
 N = 1 << Z
 TILE = 256
@@ -179,7 +179,7 @@ open(tmp_png, 'wb').write(b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', hdr) +
                           chunk(b'IDAT', zlib.compress(bytes(raw), 6)) + chunk(b'IEND', b''))
 
 print('转 JPEG ...')
-subprocess.run(['sips', '-s', 'format', 'jpeg', '-s', 'formatOptions', '68', tmp_png, '--out', OUT],
+subprocess.run(['sips', '-s', 'format', 'jpeg', '-s', 'formatOptions', '66', tmp_png, '--out', OUT],
                capture_output=True)
 print('earth.jpg', os.path.getsize(OUT), 'bytes')
 

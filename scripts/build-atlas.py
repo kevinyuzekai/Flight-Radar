@@ -3,7 +3,7 @@
 import os, zlib, struct, math
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-SRC = os.path.join(ROOT, 'app/renderer/assets/planes')
+SRC = os.path.join(ROOT, 'app/ui/assets/planes')
 OUT = os.path.join(ROOT, 'app/ui/tex/atlas.png')
 
 # 图集：4x4 网格，每格 128x128

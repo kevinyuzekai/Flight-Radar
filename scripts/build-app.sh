@@ -25,7 +25,6 @@ cp "$ROOT/native/bin/FlightRadar" "$APP/Contents/MacOS/FlightRadar"
 cp "$ROOT/native/Info.plist" "$APP/Contents/Info.plist"
 cp "$ROOT/build/icon.icns" "$APP/Contents/Resources/AppIcon.icns"
 rsync -a "$ROOT/app/ui/" "$APP/Contents/Resources/app/ui/"
-rsync -a "$ROOT/app/cesium/" "$APP/Contents/Resources/app/cesium/"
 
 APPEX="$APP/Contents/PlugIns/FlightRadarWidget.appex"
 mkdir -p "$APPEX/Contents/MacOS" "$APPEX/Contents/Resources"

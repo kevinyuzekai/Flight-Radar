@@ -55,6 +55,12 @@ html, body {
 .count-unit { font-size: 9px; color: var(--faint); }
 
 /* ---------- 地球 ---------- */
+#globe {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
 .globe-wrap {
   position: relative;
   flex: 0 0 auto;

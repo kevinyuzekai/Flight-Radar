@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Flight Radar</title>
+<link rel="stylesheet" href="../cesium/Widgets/widgets.css">
+<link rel="stylesheet" href="panel.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- 顶部：全球在空数 -->
+  <header class="head">
+    <div class="head-left">
+      <span class="dot" id="statusDot"></span>
+      <span class="title">FLIGHT RADAR</span>
+    </div>
+    <div class="head-right">
+      <span class="count" id="globalCount">—</span>
+      <span class="count-unit">在空</span>
+    </div>
+  </header>
+
+  <!-- 迷你地球 -->
+  <section class="globe-wrap">
+    <div id="cesiumContainer"></div>
+    <div class="globe-overlay">
+      <div class="overlay-row">
+        <span id="homeName">杭州</span>
+        <span class="sep">·</span>
+        <span id="nearbyCount">— 架附近</span>
+      </div>
+      <div class="overlay-hint" id="globeHint">拖动旋转 · 滚轮缩放</div>
+    </div>
+    <button class="mode-btn" id="btnMode" title="切换：地球 / 机场">🌍</button>
+  </section>
+
+  <!-- 机场榜 -->
+  <section class="airports hidden" id="airportPanel">
+    <div class="section-title">当前空域最繁忙</div>
+    <ul id="airportList"></ul>
+  </section>
+
+  <!-- 头顶飞机列表 -->
+  <section class="list-wrap">
+    <div class="section-title">
+      <span>头顶经过</span>
+      <span class="title-right" id="radiusLabel">30 km 内</span>
+    </div>
+    <ul id="planeList" class="plane-list"></ul>
+    <div class="empty" id="emptyHint">附近暂无班机</div>
+  </section>
+
+  <!-- 底部操作 -->
+  <footer class="foot">
+    <button id="btnAlert" class="pill on">拍机警报</button>
+    <button id="btnSettings" class="pill">设置</button>
+    <button id="btnQuit" class="pill ghost">退出</button>
+  </footer>
+
+  <!-- 设置页 -->
+  <div class="sheet hidden" id="sheet">
+    <div class="sheet-head">
+      <span>设置</span>
+      <button id="sheetClose" class="x">×</button>
+    </div>
+    <div class="sheet-body">
+      <div class="field">
+        <label>家 / 观察点</label>
+        <div class="row">
+          <input id="inLat" type="number" step="0.0001" placeholder="纬度">
+          <input id="inLon" type="number" step="0.0001" placeholder="经度">
+        </div>
+        <input id="inName" type="text" placeholder="名称，如 杭州">
+      </div>
+
+      <div class="field">
+        <label>警报半径 <b id="outRadius">30 km</b></label>
+        <input id="inRadius" type="range" min="5" max="120" step="5" value="30">
+      </div>
+
+      <div class="field">
+        <label>关注机型</label>
+        <div class="chips" id="watchChips"></div>
+        <input id="inTypes" type="text" placeholder="额外机型代码，空格分隔，如 B77W A35K" style="margin-top:6px">
+      </div>
+
+      <div class="field">
+        <label>数据范围</label>
+        <select id="inRadiusFeed">
+          <option value="100">100 NM（只看本地）</option>
+          <option value="250" selected>250 NM（周边空域，推荐）</option>
+          <option value="450">450 NM（更大范围）</option>
+        </select>
+        <p class="note" style="margin-top:6px">范围越大，「全球在空数」与机场榜越准，但请求更慢。</p>
+      </div>
+
+      <button id="btnSave" class="primary">保存</button>
+      <button id="btnTestAlert" class="pill" style="margin-top:8px;width:100%">发送一条测试通知</button>
+      <p class="note">警报依赖系统通知；如未授权，可在「系统设置 → 通知」中允许本应用。</p>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/bridge.js"></script>
+<script src="../cesium/Cesium.js"></script>
+<script src="js/util.js"></script>
+<script src="js/sources.js"></script>
+<script src="js/scene.js"></script>
+<script src="js/panel.js"></script>
+</body>
+</html>

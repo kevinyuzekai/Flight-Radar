@@ -5,8 +5,8 @@
   <key>CFBundleName</key><string>Flight Radar</string>
   <key>CFBundleDisplayName</key><string>Flight Radar</string>
   <key>CFBundleIdentifier</key><string>com.zekaiyu.flightradar</string>
-  <key>CFBundleVersion</key><string>1.0.0</string>
-  <key>CFBundleShortVersionString</key><string>1.0.0</string>
+  <key>CFBundleVersion</key><string>2.0.0</string>
+  <key>CFBundleShortVersionString</key><string>2.0.0</string>
   <key>CFBundleExecutable</key><string>FlightRadar</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>
@@ -14,6 +14,7 @@
   <key>NSHighResolutionCapable</key><true/>
   <key>NSPrincipalClass</key><string>NSApplication</string>
   <key>LSApplicationCategoryType</key><string>public.app-category.utilities</string>
+  <key>LSUIElement</key><true/>
   <key>NSHumanReadableCopyright</key><string>ADS-B data © adsb.lol / adsb.fi</string>
 </dict>
 </plist>

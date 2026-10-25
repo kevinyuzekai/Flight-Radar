@@ -1,46 +1,52 @@
 #!/bin/bash
-# 组装原生 Flight Radar.app 并打包成压缩 DMG
+# 组装菜单栏版 Flight Radar.app（含通知中心小组件），ad-hoc 签名并打包 DMG
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/build/Flight Radar.app"
 OUT="$ROOT/release"
+TARGET="arm64-apple-macos13.0"
+CACHE="$ROOT/.build-cache"
 
-echo "[build] 清理旧产物"
+echo "[build] 编译主程序"
+mkdir -p "$ROOT/native/bin" "$CACHE"
+swiftc -O -target "$TARGET" -module-cache-path "$CACHE" -parse-as-library \
+  "$ROOT"/native/App/*.swift -o "$ROOT/native/bin/FlightRadar"
+
+echo "[build] 编译小组件扩展"
+swiftc -O -target "$TARGET" -module-cache-path "$CACHE" -parse-as-library -application-extension \
+  -module-name FlightRadarWidget "$ROOT/native/Widget/Widget.swift" \
+  -framework WidgetKit -framework SwiftUI -o "$ROOT/native/bin/FlightRadarWidget"
+
+echo "[build] 清理并组装"
 rm -rf "$APP" "$OUT"
-mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" "$OUT"
-
-echo "[build] 复制可执行文件与 Info.plist"
+mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources/app" "$OUT"
 cp "$ROOT/native/bin/FlightRadar" "$APP/Contents/MacOS/FlightRadar"
-chmod +x "$APP/Contents/MacOS/FlightRadar"
 cp "$ROOT/native/Info.plist" "$APP/Contents/Info.plist"
 cp "$ROOT/build/icon.icns" "$APP/Contents/Resources/AppIcon.icns"
+rsync -a "$ROOT/app/ui/" "$APP/Contents/Resources/app/ui/"
+rsync -a "$ROOT/app/cesium/" "$APP/Contents/Resources/app/cesium/"
 
-echo "[build] 打包网页资源（剔除 Electron/开发残留）"
-rsync -a \
-  --exclude 'renderer/assets/plane*.png' \
-  "$ROOT/app/" "$APP/Contents/Resources/app/"
+APPEX="$APP/Contents/PlugIns/FlightRadarWidget.appex"
+mkdir -p "$APPEX/Contents/MacOS" "$APPEX/Contents/Resources"
+cp "$ROOT/native/bin/FlightRadarWidget" "$APPEX/Contents/MacOS/FlightRadarWidget"
+cp "$ROOT/native/Widget/Info.plist" "$APPEX/Contents/Info.plist"
+cp "$ROOT/app/ui/tex/landmask.png" "$APPEX/Contents/Resources/landmask.png"
+strip -x "$APP/Contents/MacOS/FlightRadar" "$APPEX/Contents/MacOS/FlightRadarWidget" || true
 
-echo "[build] 体积明细"
-du -sh "$APP/Contents/Resources/app" "$APP/Contents/Resources/app/cesium" "$APP" 2>/dev/null || true
-
-echo "[build] 整包 ad-hoc 签名（先签内部可执行文件，再签整个 .app）"
+echo "[build] ad-hoc 签名（由内向外）"
 xattr -cr "$APP"
-codesign --force --sign - --timestamp=none "$APP/Contents/MacOS/FlightRadar"
-codesign --force --deep --sign - --timestamp=none "$APP"
+codesign --force --sign - --entitlements "$ROOT/native/Widget/Widget.entitlements" "$APPEX"
+codesign --force --sign - "$APP"
 codesign --verify --deep --strict --verbose=2 "$APP"
+du -sh "$APP"
 
-echo "[build] 生成压缩 DMG（UDZO + zlib-level 9）"
 STAGE="$ROOT/build/dmgstage"
 rm -rf "$STAGE"; mkdir -p "$STAGE"
-ditto "$APP" "$STAGE/Flight Radar.app"
+cp -R "$APP" "$STAGE/"
 ln -s /Applications "$STAGE/Applications"
-
-hdiutil create -volname "Flight Radar" \
-  -srcfolder "$STAGE" \
-  -ov -format UDZO -imagekey zlib-level=9 \
-  "$OUT/Flight Radar.dmg" >/dev/null
-
+echo "[build] 打包 DMG"
+hdiutil create -volname "Flight Radar" -srcfolder "$STAGE" \
+  -ov -format UDZO -imagekey zlib-level=9 "$OUT/Flight Radar.dmg" >/dev/null
 rm -rf "$STAGE"
-echo "[build] 完成："
 ls -lh "$OUT/Flight Radar.dmg"

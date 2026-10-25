@@ -1,0 +1,21 @@
+{
+  "name": "flight-radar",
+  "productName": "Flight Radar",
+  "version": "1.0.0",
+  "description": "全球实时航班雷达 · ADS-B (adsb.lol + adsb.fi) · Cesium 三维地球 · 原生 WKWebView",
+  "author": "zekaiyu",
+  "license": "MIT",
+  "scripts": {
+    "runtime": "node scripts/prepare-runtime.mjs",
+    "assets": "node scripts/build-assets.mjs",
+    "icon": "node scripts/build-icon.mjs",
+    "swift": "swiftc -O -target arm64-apple-macos13.0 -module-cache-path ./.build-cache native/main.swift -o native/bin/FlightRadar",
+    "build": "bash scripts/build-app.sh",
+    "start": "bash scripts/build-app.sh && open 'build/Flight Radar.app'",
+    "smoke": "bash scripts/smoke.sh"
+  },
+  "devDependencies": {},
+  "dependencies": {
+    "cesium": "^1.146.0"
+  }
+}

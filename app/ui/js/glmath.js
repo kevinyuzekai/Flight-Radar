@@ -67,11 +67,17 @@
     const x = p[0], y = p[1], z = p[2];
     const cx = vp[0] * x + vp[4] * y + vp[8] * z + vp[12];
     const cy = vp[1] * x + vp[5] * y + vp[9] * z + vp[13];
+    const cz = vp[2] * x + vp[6] * y + vp[10] * z + vp[14];
     const cw = vp[3] * x + vp[7] * y + vp[11] * z + vp[15];
     if (cw <= 1e-6) return null;
     const nx = cx / cw, ny = cy / cw;
     if (nx < -1.8 || nx > 1.8 || ny < -1.8 || ny > 1.8) return null;
-    return { x: (nx * 0.5 + 0.5) * w, y: (1 - (ny * 0.5 + 0.5)) * h, depth: cw };
+    return {
+      x: (nx * 0.5 + 0.5) * w,
+      y: (1 - (ny * 0.5 + 0.5)) * h,
+      depth: cw,
+      z: cz / cw,          // NDC 深度：交给 GPU 做遮挡，球背面会被地球挡住
+    };
   };
 
   /**

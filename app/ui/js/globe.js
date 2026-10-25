@@ -61,7 +61,7 @@
   const VS_SPRITE = `
     attribute vec2 aCorner; attribute vec2 aCenter; attribute vec2 aSize;
     attribute float aRot; attribute float aAlpha; attribute vec4 aColor;
-    attribute vec2 aUV;
+    attribute vec2 aUV; attribute float aZ;
     uniform vec2 uVP;
     varying vec2 vUV; varying vec4 vColor;
     void main(){
@@ -69,7 +69,7 @@
       vec2 p=aCorner*aSize;
       vec2 r=vec2(p.x*c-p.y*s, p.x*s+p.y*c);
       vec2 px=aCenter+r;
-      gl_Position=vec4(px.x/uVP.x*2.0-1.0, 1.0-px.y/uVP.y*2.0, 0.0, 1.0);
+      gl_Position=vec4(px.x/uVP.x*2.0-1.0, 1.0-px.y/uVP.y*2.0, aZ, 1.0);
       vUV=aUV; vColor=vec4(aColor.rgb, aColor.a*aAlpha);
     }`;
 
@@ -133,7 +133,7 @@
   }
 
   // 每顶点: corner2 center2 size2 rot1 alpha1 color4 uv2 = 14 floats
-  const V_FLOATS = 14;
+  const V_FLOATS = 15;
   const MAX_SPRITES = 15000;
 
   M.create = function (canvas, opts) {
@@ -146,7 +146,7 @@
       sphere: program(gl, VS_SPHERE, FS_SPHERE, ['aPos', 'aNor', 'aUV']),
       atmos: program(gl, VS_ATMOS, FS_ATMOS, ['aPos']),
       sprite: program(gl, VS_SPRITE, FS_SPRITE,
-        ['aCorner', 'aCenter', 'aSize', 'aRot', 'aAlpha', 'aColor', 'aUV']),
+        ['aCorner', 'aCenter', 'aSize', 'aRot', 'aAlpha', 'aColor', 'aUV', 'aZ']),
       flat: program(gl, VS_FLAT, FS_FLAT, ['aPos', 'aUV']),
     };
 
@@ -330,6 +330,7 @@
           arr[o++] = col[0]; arr[o++] = col[1]; arr[o++] = col[2]; arr[o++] = 1;
           arr[o++] = uvs[c][0] * sp.uw + sp.ux;
           arr[o++] = uvs[c][1] * sp.uh + sp.uy;
+          arr[o++] = sp.z == null ? 0 : sp.z;
         }
       }
       const GP = s.P.sprite;
@@ -353,12 +354,15 @@
       bind(GP.a.aAlpha, 1, 28);
       bind(GP.a.aColor, 4, 32);
       bind(GP.a.aUV, 2, 48);
+      bind(GP.a.aZ, 1, 56);
 
-      gl.disable(gl.DEPTH_TEST);
+      gl.enable(gl.DEPTH_TEST);
+      gl.depthFunc(gl.LEQUAL);
+      gl.depthMask(false);          // 只测试、不写入，保证精灵之间正常叠加
       gl.enable(gl.BLEND);
       gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
       gl.drawArrays(gl.TRIANGLES, 0, n * 6);
-      gl.enable(gl.DEPTH_TEST);
+      gl.depthMask(true);
     }
   }
 

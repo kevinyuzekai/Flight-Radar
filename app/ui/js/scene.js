@@ -164,7 +164,7 @@
     for (const e of planeIndex.values()) {
       advance(e, now);
 
-      let sx, sy;
+      let sx, sy, sz = 0;
       if (s.flat) {
         // 平面全球：经度 → x，纬度 → y，全部可见
         sx = ((e.disp.lon + 180) / 360) * w;
@@ -178,19 +178,19 @@
         e.hidden = false;
         const scr = GL.project(camNow.vp, pt, w, h);
         if (!scr) continue;
-        sx = scr.x; sy = scr.y;
+        sx = scr.x; sy = scr.y; sz = scr.z - 0.0015;  // 轻微偏置，避免被自身高度推到球体之后
       }
 
       const cls = e.plane.cls || 'narrowbody';
       const rect = classRect(cls);
       const isSel = e.plane.hex === state.selectedHex;
       const isWatch = !!e.plane.watched;
-      const zoom = s.flat ? 1 : Math.max(0.9, Math.min(1.35, 8.0 / s.dist));
+      const zoom = s.flat ? 1 : Math.max(0.55, Math.min(1.35, 8.0 / Math.max(1.06, s.dist)));
       const base = s.flat ? 3.4 : 7.5;
       const size = (isSel ? base * 1.35 : base) * dpr * zoom;
 
       out.push({
-        x: sx, y: sy, size,
+        x: sx, y: sy, z: sz, size,
         rot: ((e.plane.track || 0) * Math.PI) / 180,
         alpha: e.age > 25000 ? 0.45 : 1,
         color: isSel ? [1, 0.36, 0.30] : (isWatch ? [0.62, 1, 0.43] : altColor(e.plane.alt)),
@@ -360,7 +360,7 @@
     c.addEventListener('wheel', (e) => {
       e.preventDefault();
       const s = state.globe;
-      s.targetDist = Math.max(3.2, Math.min(14.0, s.targetDist + Math.sign(e.deltaY) * 0.25));
+      s.targetDist = Math.max(1.06, Math.min(16.0, s.targetDist + Math.sign(e.deltaY) * 0.25));
       if (state.followHex) unfollow();
       s.spin = false;
     }, { passive: false });

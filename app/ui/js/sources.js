@@ -28,49 +28,54 @@
 
   /** 全球自适应采样点：航空流量最高的区域 */
   const HOTSPOTS = [
-    { name: '西欧', lat: 50.5, lon: 4.5 },
-    { name: '英伦', lat: 52.5, lon: -1.5 },
-    { name: '伊比利亚', lat: 40.2, lon: -3.7 },
-    { name: '北欧', lat: 59.3, lon: 18.0 },
-    { name: '东欧', lat: 47.5, lon: 22.0 },
-    { name: '土耳其', lat: 41.0, lon: 29.0 },
-    { name: '美东', lat: 39.5, lon: -76.0 },
-    { name: '美东南', lat: 33.2, lon: -84.4 },
-    { name: '美中', lat: 41.5, lon: -88.0 },
-    { name: '美西', lat: 37.5, lon: -122.2 },
-    { name: '美西南', lat: 33.5, lon: -112.0 },
-    { name: '加西', lat: 49.2, lon: -123.1 },
-    { name: '加东', lat: 43.7, lon: -79.4 },
-    { name: '墨西哥', lat: 19.4, lon: -99.1 },
-    { name: '巴西南', lat: -23.4, lon: -46.6 },
-    { name: '阿根廷', lat: -34.6, lon: -58.4 },
-    { name: '日本', lat: 35.6, lon: 139.7 },
-    { name: '韩国', lat: 37.5, lon: 127.0 },
-    { name: '华东', lat: 31.2, lon: 121.5 },
-    { name: '华南', lat: 23.1, lon: 113.3 },
-    { name: '华北', lat: 39.9, lon: 116.4 },
-    { name: '台北', lat: 25.0, lon: 121.5 },
-    { name: '东南亚', lat: 1.35, lon: 103.9 },
-    { name: '曼谷', lat: 13.7, lon: 100.5 },
-    { name: '印度', lat: 19.0, lon: 72.8 },
-    { name: '德里', lat: 28.6, lon: 77.1 },
-    { name: '迪拜', lat: 25.2, lon: 55.3 },
-    { name: '澳洲东', lat: -33.9, lon: 151.2 },
-    { name: '澳洲西', lat: -31.9, lon: 115.9 },
-    { name: '新西兰', lat: -36.8, lon: 174.8 },
-    { name: '南非', lat: -26.2, lon: 28.0 },
-    { name: '埃及', lat: 30.1, lon: 31.4 },
+    // 欧洲
+    { name: '西欧', lat: 50.5, lon: 4.5 }, { name: '英伦', lat: 52.5, lon: -1.5 },
+    { name: '伊比利亚', lat: 40.2, lon: -3.7 }, { name: '北欧', lat: 59.3, lon: 18.0 },
+    { name: '东欧', lat: 47.5, lon: 22.0 }, { name: '土耳其', lat: 41.0, lon: 29.0 },
+    { name: '意大利', lat: 43.0, lon: 11.5 }, { name: '巴尔干', lat: 44.0, lon: 20.5 },
+    // 北美
+    { name: '美东', lat: 39.5, lon: -76.0 }, { name: '美东南', lat: 33.2, lon: -84.4 },
+    { name: '美中', lat: 41.5, lon: -88.0 }, { name: '美西', lat: 37.5, lon: -122.2 },
+    { name: '美西南', lat: 33.5, lon: -112.0 }, { name: '美南', lat: 30.0, lon: -95.3 },
+    { name: '加西', lat: 49.2, lon: -123.1 }, { name: '加东', lat: 43.7, lon: -79.4 },
+    { name: '墨西哥', lat: 19.4, lon: -99.1 }, { name: '阿拉斯加', lat: 61.2, lon: -149.9 },
+    // 南美
+    { name: '巴西南', lat: -23.4, lon: -46.6 }, { name: '阿根廷', lat: -34.6, lon: -58.4 },
+    { name: '安第斯', lat: -12.0, lon: -77.0 }, { name: '巴西北', lat: -8.0, lon: -35.0 },
+    // 东亚
+    { name: '华东', lat: 31.2, lon: 121.5 }, { name: '华北京津', lat: 39.9, lon: 116.4 },
+    { name: '华南', lat: 23.1, lon: 113.3 }, { name: '成渝', lat: 30.6, lon: 104.1 },
+    { name: '日本', lat: 35.6, lon: 139.7 }, { name: '日本西', lat: 34.7, lon: 135.5 },
+    { name: '韩国', lat: 37.5, lon: 127.0 }, { name: '台湾', lat: 25.0, lon: 121.5 },
+    // 亚太
+    { name: '东南亚', lat: 1.4, lon: 103.9 }, { name: '泰国', lat: 13.7, lon: 100.5 },
+    { name: '越南', lat: 10.8, lon: 106.7 }, { name: '菲律宾', lat: 14.6, lon: 121.0 },
+    { name: '印尼', lat: -6.2, lon: 106.8 }, { name: '印度西', lat: 19.1, lon: 72.9 },
+    { name: '印度东', lat: 28.6, lon: 77.2 }, { name: '巴基斯坦', lat: 24.9, lon: 67.0 },
+    { name: '澳洲东', lat: -33.9, lon: 151.2 }, { name: '澳洲西', lat: -31.9, lon: 115.9 },
+    { name: '新西兰', lat: -37.0, lon: 174.8 },
+    // 中东 / 非洲
+    { name: '海湾', lat: 25.2, lon: 55.3 }, { name: '沙特', lat: 24.7, lon: 46.7 },
+    { name: '埃及', lat: 30.0, lon: 31.2 }, { name: '东非', lat: -1.3, lon: 36.8 },
+    { name: '西非', lat: 6.5, lon: 3.4 }, { name: '南非', lat: -26.1, lon: 28.0 },
+    { name: '摩洛哥', lat: 33.6, lon: -7.6 },
+    // 海洋航路（跨洋航班密集区）
+    { name: '北大西洋西', lat: 48.0, lon: -40.0 }, { name: '北大西洋东', lat: 54.0, lon: -20.0 },
+    { name: '格陵兰南', lat: 61.0, lon: -45.0 }, { name: '太平洋中', lat: 35.0, lon: -165.0 },
+    { name: '太平洋东', lat: 30.0, lon: -140.0 }, { name: '印度洋', lat: 5.0, lon: 80.0 },
+    { name: '南大西洋', lat: -10.0, lon: -25.0 }, { name: '北大西洋中', lat: 42.0, lon: -55.0 },
   ];
 
   /* ---------------- 状态 ---------------- */
   const aircraft = new Map();
   /** 一架飞机多久没有新定位就移除（毫秒） */
-  const STALE_MS = 60000;
+  const STALE_MS = 150000;
 
   const settings = {
     mode: 'both',
     fiMode: 'view',
     intervalMs: 10000,
+    lolIntervalMs: 60000,
     lolRadius: 20000,
     showGround: false,
     maxAircraft: 12000,
@@ -81,6 +86,7 @@
   let running = false;
   let inFlight = false;
   let lastFiTiles = [];
+  let lastLolPlanes = [];
   let fiCursor = 0;
   let viewProvider = null;
   let onChange = null;
@@ -299,7 +305,7 @@
 
     let tiles = [];
     if (settings.fiMode === 'view' && viewProvider) tiles = tilesForView(viewProvider(), 9);
-    if (!tiles.length) tiles = tilesForGlobal(12);
+    if (!tiles.length) tiles = tilesForGlobal(fiCursor === 0 ? 24 : 8);
     if (!tiles.length) return { ok: false, planes: [], skipped: true };
 
     lastFiTiles = tiles;
@@ -347,6 +353,9 @@
     return true;
   }
 
+  let lastLolAt = 0;
+  let lolBackoff = 0;   // 命中 429 后指数退避
+
   async function tick(force) {
     if (!running && !force) return;
     if (inFlight) return;
@@ -355,18 +364,43 @@
 
     try {
       const jobs = [];
-      if (settings.mode === 'lol' || settings.mode === 'both') jobs.push(fetchLol());
-      if (settings.mode === 'fi' || settings.mode === 'both') jobs.push(fetchFi());
+      const labels = [];
+      const nowMs0 = Date.now();
+      // adsb.lol 全球快照：限流约 60 次/分钟，这里按 60s 节奏（命中 429 会退避）
+      if ((settings.mode === 'lol' || settings.mode === 'both') &&
+          (force || nowMs0 - lastLolAt >= (lolBackoff || settings.lolIntervalMs))) {
+        jobs.push(fetchLol().then((r) => { lastLolAt = Date.now(); lolBackoff = 0; return r; })
+          .catch((e) => {
+            const m = String((e && e.message) || e);
+            if (m.includes('429')) {
+              lolBackoff = Math.min(300000, Math.max(60000, (lolBackoff || 60000) * 2));
+              U.pushError('adsb.lol 限流，' + Math.round(lolBackoff / 1000) + 's 后重试');
+            }
+            throw e;
+          }));
+        labels.push('lol');
+      }
+      if (settings.mode === 'fi' || settings.mode === 'both') { jobs.push(fetchFi()); labels.push('fi'); }
 
       const results = await Promise.all(jobs);
       let merged = [];
 
-      if (settings.mode === 'lol') {
-        merged = (results[0] && results[0].planes) || [];
-      } else if (settings.mode === 'fi') {
-        merged = (results[0] && results[0].planes) || [];
+      const byLabel = {};
+      labels.forEach((l, i) => { byLabel[l] = results[i]; });
+      const lol = byLabel.lol, fi = byLabel.fi;
+
+      if (!lol && !fi) {
+        // 本轮没有发起任何请求（例如 lol 在退避中）：沿用现有数据继续外推
+        merged = Array.from(aircraft.values());
+      } else if (settings.mode === 'lol' || (!fi)) {
+        merged = ((lol && lol.planes) || []).concat(
+          lastLolPlanes.filter((p) => !(lol && lol.planes || []).some((q) => q.hex === p.hex))
+        );
+      } else if (settings.mode === 'fi' || (!lol)) {
+        merged = ((fi && fi.planes) || []).concat(
+          Array.from(aircraft.values()).filter((p) => !((fi && fi.planes) || []).some((q) => q.hex === p.hex))
+        );
       } else {
-        const [lol, fi] = results;
         // 两个源都有同一架时，取定位时刻更新的那条，而不是固定让 adsb.fi 覆盖
         const map = new Map();
         for (const p of [...((lol && lol.planes) || []), ...((fi && fi.planes) || [])]) {
@@ -375,6 +409,7 @@
         }
         merged = Array.from(map.values());
       }
+      lastLolPlanes = (lol && lol.planes) || lastLolPlanes;
 
       // 只前进不后退：比已有定位更旧（或相同）的数据不覆盖位置，
       // 避免较慢的源 / 缓存响应把飞机拉回到之前的位置。

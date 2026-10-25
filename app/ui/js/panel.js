@@ -15,7 +15,7 @@
 
   const store = { payload: null, home: { lat: 30.27, lon: 120.15 }, radiusKm: 30, selected: null };
 
-  let mode = 'globe';
+  let mode = 'world';
   let sceneReady = false;
   const $ = (id) => document.getElementById(id);
 
@@ -239,6 +239,7 @@
     });
     FR.sources.start({ mode: 'both', intervalMs: 10000 });
     if (store.selected) FR.scene.select(store.selected);
+    setMode(mode);
     window.__FR_READY__ = true;
     sendNative('ready');
   }

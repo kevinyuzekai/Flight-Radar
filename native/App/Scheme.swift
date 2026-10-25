@@ -47,13 +47,15 @@ final class AppSchemeHandler: NSObject, WKURLSchemeHandler {
         lock.lock(); stopped.insert(ObjectIdentifier(task)); lock.unlock()
     }
 
-    private func send(_ task: WKURLSchemeTask, _ status: Int, _ mime: String, _ body: Data) {
+    private func send(_ task: WKURLSchemeTask, _ status: Int, _ mime: String, _ body: Data,
+                      encoding: String? = nil) {
         lock.lock(); let dead = stopped.contains(ObjectIdentifier(task)); lock.unlock()
         guard !dead, let url = task.request.url else { return }
-        let headers = ["Content-Type": mime,
+        var headers = ["Content-Type": mime,
                        "Content-Length": String(body.count),
                        "Cache-Control": "no-cache",
                        "Access-Control-Allow-Origin": "*"]
+        if let encoding { headers["Content-Encoding"] = encoding }
         guard let resp = HTTPURLResponse(url: url, statusCode: status,
                                          httpVersion: "HTTP/1.1", headerFields: headers) else { return }
         task.didReceive(resp)

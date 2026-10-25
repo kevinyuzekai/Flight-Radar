@@ -1,181 +1,197 @@
 # Flight Radar
 
-一个跑在 macOS 上的**全球实时航班雷达**：Cesium 三维地球 + 卫星影像底图 + 来自
-[adsb.lol](https://adsb.lol/) 与 [adsb.fi](https://adsb.fi/) 的实时 ADS-B 数据。
+macOS **菜单栏实时航班雷达**。不打开窗口、不占 Dock，常驻菜单栏，点一下才弹出半透明悬浮面板：
+三维地球 + 真实卫星影像 + 你头顶正在经过的飞机，还能对指定机型设「拍机警报」。
 
-![界面](docs/screenshot.png)
+<p align="center">
+  <img src="docs/screenshot.jpg" width="360" alt="Flight Radar 面板">
+</p>
 
-**安装包 5.9 MB**（App 本体 11 MB）。外壳用系统自带的 WKWebView + 200 KB 的 Swift 可执行文件，
-不含 Electron。
+- **版本**：0.2.1
+- **系统**：macOS 13+（Apple Silicon）
+- **安装包**：2.6 MB（App 本体 8.1 MB）
+- **数据**：[adsb.lol](https://adsb.lol/) + [adsb.fi](https://adsb.fi/)
+- **影像**：Esri World Imagery
 
-| | Electron 版 | 本项目（原生 WKWebView） |
-|---|---|---|
-| DMG | 160 MB | **5.9 MB** |
-| 帧率 | 2–5 fps | **60 fps** |
-| 启动 | 数秒 | 即时 |
+---
+
+## 它是怎么工作的
+
+```
+菜单栏图标（实时显示全球在空飞机数）
+        │  点击
+        ▼
+悬浮面板（无边框 / 半透明 / 可拖动）
+   ├── 迷你三维地球（Cesium）+ 真实卫星底图
+   ├── 头顶经过的飞机列表（距离 / 方位 / 高度）
+   └── 当前空域最繁忙机场榜
+        │
+        └── 拍机警报 → 右上角系统通知
+```
+
+App 以 `LSUIElement` 运行，**没有 Dock 图标、没有大窗口**。数据在后台每 20 秒刷新一次，
+菜单栏数字始终是最新的，面板按需生成，不用时不会占用屏幕。
 
 ---
 
 ## 功能
 
+### 菜单栏
+- 实时显示全球在空飞机数量（图标由代码绘制，无图片资源）
+- 左键：开/关悬浮面板；右键：显示面板、开关拍机警报、退出
+
+### 悬浮面板
 | 模块 | 说明 |
 | --- | --- |
-| 三维地球 | Cesium 1.146，真实椭球建模、大气散射、星空、惯性旋转/缩放 |
-| 卫星地图 | Esri World Imagery 全球卫星影像（最高 19 级），另有暗色画布与纯地球模式 |
-| 实时航班 | 全球一次拉取（adsb.lol，约 1 万架在空目标），adsb.fi 按网格补充高密度区域 |
-| 按机型大小图标 | 10 种 FR24 风格剪影，按**真实翼展/机身比例**绘制：A380 明显比 CRJ 更宽更大，一眼可辨 |
-| 航班信息 | 航班号、ICAO、注册号、机型、描述、高度、几何高度、地速、航向、垂直速度、应答机、分类、信号强度、距接收站距离 |
-| 平滑动画 | 按速度与航向做时间外推，10 秒一帧的数据也能连续滑行 |
-| 高度着色 | 低空绿 → 中空青 → 高空白，左下角有高度色带图例 |
-| 搜索 | 顶栏搜索航班号 / ICAO / 注册号，回车直接飞到目标 |
-| 跟随 | 单击看详情，双击锁定视角跟随（目标稳定居中） |
-| 视角预设 | 全球、欧洲、东亚、北美、南美、非洲、大洋洲、中东 |
-| 筛选 | 最低高度过滤、最大显示数量、隐藏地面目标 |
+| 迷你三维地球 | Cesium 真实球体 + Esri 卫星影像，可拖动旋转、滚轮缩放、双击复位 |
+| 头顶经过 | 按距离排序的附近飞机：航班号、航空公司、机型、高度、距离、方位 |
+| 最繁忙机场 | 用周边 55 km 内的在空飞机数近似，列出前 5 名 |
+| 点选跟踪 | 点列表中的飞机，地球自动对准并跟随，目标始终居中 |
 
-### 两个已修复的关键问题
+### 拍机警报
+设定关注机型 + 半径后，一旦有匹配的飞机进入范围，立刻推送系统通知：
 
-**1. 飞机穿透地球、能看见背面目标**
+> ⚠️ 拍机警报 · A380
+> 一架阿联酋航空 空客 A380 正从你附近飞过，高度 35000 英尺，距离 12 公里。
 
-旧实现给 billboard 设了 `disableDepthTestDistance: Infinity`，这等于**强制关闭 GPU 深度测试**，
-于是地球背面的飞机被直接画到球面上。修复分两层：
+- **关注机型**：A380 / B747 / 宽体 / A330 / 窄体 / 支线 / 涡桨 / 通航 / 直升机 / 战机，可多选
+- **额外机型码**：支持填 `B77W A35K` 这类精确代码
+- **半径**：5–120 km 可调
+- **去重**：同一架飞机 30 分钟内只提醒一次，避免刷屏
+- **测试按钮**：设置页里可发一条测试通知，确认权限是否正常
 
-* 不再设置该属性（默认 `undefined` = 正常深度测试），被地球挡住的像素自然不显示；
-* 每帧用 `Cesium.EllipsoidalOccluder.isPointVisible()` 做地平线剔除，把位于地球背面的目标
-  直接 `show = false`。既省渲染，也消除球体边缘的深度精度漏画。
+### 通知中心小组件（需签名，见下文）
+`native/Widget/` 是完整的 WidgetKit 扩展：
 
-顶栏「可见 / 背面」实时显示被剔除的数量，可自行验证。
+- **小尺寸**：旋转地球 + 在空飞机数
+- **中尺寸**：地球 + 最繁忙机场前 5 名
+- App 写入共享快照，小组件按时间线读取，超过 30 分钟会提示「打开 App 以更新」
 
-**2. 图标大小不可辨**
-
-旧版所有飞机共用一个圆形光点贴图。现在按 ADS-B 机型代码（`t` 字段）映射到 10 类机体，
-每类按**真实尺寸**（米）绘制在等比画布上：
-
-| 类别 | 代表机型 | 翼展 | 机身 |
-| --- | --- | --- | --- |
-| `a380` | A380 | 79.8 m | 72.7 m |
-| `b747` | B747 | 64.4 m | 70.6 m |
-| `widebody` | B777 / B787 / A350 | 64.8 m | 66.8 m |
-| `a330` | A330 | 60.3 m | 58.8 m |
-| `narrowbody` | B737 / A320 | 35.8 m | 39.5 m |
-| `regional` | CRJ900 / E190 | 24.9 m | 36.4 m |
-| `turboprop` | ATR72 / Q400 | 27.1 m | 27.2 m |
-| `light` | C172 / SR22 | 11.0 m | 8.3 m |
-| `heli` | H135 / AS350 | 10.2 m | 12.2 m |
-| `fighter` | F-16 / F-35 | 10.0 m | 15.0 m |
-
-同一比例尺下，A380 的画布是 188×174，CRJ 只有 62×86 —— 大小差异来自几何而非硬编码缩放。
-图标为白色实心 + 深蓝黑描边，运行时按高度染色。
+### 设置
+- 观察点：经纬度 + 名称（默认杭州），不依赖定位权限
+- 警报半径、关注机型、额外机型码
+- 数据范围：100 / 250 / 450 NM（范围越大，全球计数与机场榜越准）
 
 ---
 
 ## 数据来源
 
-* **adsb.lol** — `https://api.adsb.lol/v2/point/{lat}/{lon}/{dist}`
-  支持任意半径，一次 `20000 NM` 即可拿到全球全量快照（约 1 万架飞机，6 MB）。限速约 60 次/分钟。
-* **adsb.fi** — `https://opendata.adsb.fi/api/v2/lat/{lat}/lon/{lon}/dist/{dist}`
-  单次半径上限 **250 NM**，因此按视野网格切块并发查询。
+| 源 | 接口 | 用途 |
+| --- | --- | --- |
+| adsb.lol | `api.adsb.lol/v2/point/{lat}/{lon}/{dist}` | 主数据源，单次可取较大范围 |
+| adsb.fi | `opendata.adsb.fi/api/v2/lat/{lat}/lon/{lon}/dist/{dist}` | 补充，单次上限 250 NM |
 
-两种数据源在渲染层按 `hex`（ICAO 24 位地址）合并去重，同一架机以 adsb.fi 的新数据为准。
-
-> 所有请求由 Electron 主进程发出（`net:fetch`），渲染层不做跨域请求；主进程只放行这几个
-> ADS-B 域名，避免页面被当作任意代理。
+两路并行拉取，按 `hex`（ICAO 24 位地址）合并，同一架取最新定位。
+所有请求由原生 `URLSession` 发出，只放行上述域名——页面不会被当成任意代理。
 
 ---
 
-## 运行
+## 构建
+
+`app/cesium/` 是从 npm 包生成的运行时（不入库），所以需要三步：
 
 ```bash
-npm install              # 只装 cesium（用于生成运行时资源）
-npm run runtime          # 裁剪并复制 Cesium 到 app/cesium，顺带预压缩 .gz
-npm run assets           # 生成 10 类机型图标
-npm run icon             # 生成 build/icon.icns
-npm run swift            # 编译原生外壳 → native/bin/FlightRadar
-npm run build            # 组装 .app 并打包 release/Flight Radar.dmg
-npm run start            # 构建后直接打开
-npm run smoke            # 冒烟自检：抓状态 + 截图后自动退出
+npm install        # 安装 cesium（仅构建期需要）
+npm run runtime    # 生成 app/cesium：裁剪 + 只复制运行时真正用到的部分
+npm run build      # 编译原生外壳 + 组装 .app + ad-hoc 签名 + 打包 DMG
 ```
+
+其他命令：
+
+```bash
+npm run start      # 构建后直接打开
+npm run icon       # 重新生成 build/icon.icns
+npm run smoke      # 冒烟自检：抓状态 + 截图后退出
+```
+
+构建产物：`release/Flight Radar.dmg`
+
+### 体积是怎么压下来的
+
+原始工程 16 MB，现在安装包 2.6 MB，主要靠这几刀：
+
+| 处理 | 节省 |
+| --- | --- |
+| 去掉 `app/cesium/cesium/` 重复副本 | 11 MB |
+| 删掉失效的 `.gz` 预压缩文件 | 1.7 MB |
+| SkyBox 六张星空图 → 单张可平铺星图 | 810 KB |
+| 删除 `NaturalEarthII` / `Assets/Images` | 580 KB |
+| 删除旧渲染层、中间素材、旧单体入口 | 730 KB |
+| 截图 3000px PNG → JPEG | 3.7 MB |
+
+另外 `build-app.sh` 的 Swift 模块缓存改写到系统临时目录——之前它会在工程里堆出 **484 MB** 的
+`.build-cache`。
+
+---
 
 ## 目录结构
 
 ```
-Flight Radar/
+Flight-Radar/
 ├── native/
-│   ├── main.swift        原生外壳：AppKit 窗口 + WKWebView + 两个自定义协议
-│   ├── Info.plist
-│   └── bin/FlightRadar   编译产物（~180 KB）
-├── app/
-│   ├── renderer/
-│   │   ├── index.html    HUD 结构
-│   │   ├── styles.css    设计系统（暗色 + 青色霓虹）
-│   │   ├── assets/planes/  10 类机型图标（脚本生成）
-│   │   └── js/
-│   │       ├── bridge.js   渲染层 ↔ 原生桥（数据走 radar:// 代理）
-│   │       ├── util.js     格式化 / 地理 / 状态导出
-│   │       ├── sources.js  ADS-B 拉取、网格、合并、过滤
-│   │       ├── scene.js    Cesium 场景、图元、遮挡剔除、交互
-│   │       └── ui.js       侧栏、详情、搜索、快捷键
-│   └── cesium/           裁剪后的 Cesium 运行时（脚本生成）
-├── scripts/
-│   ├── prepare-runtime.mjs  裁剪 Cesium + 预压缩
-│   ├── build-assets.mjs     按真实尺寸生成机型图标
-│   ├── build-icon.mjs       生成 build/icon.icns
-│   └── build-app.sh         组装 .app + 打包 DMG
+│   ├── App/                 原生外壳（Swift / AppKit）
+│   │   ├── main.swift       菜单栏、状态图标、自检
+│   │   ├── Panel.swift      无边框半透明悬浮窗 + WKWebView 宿主
+│   │   ├── Store.swift      设置持久化、轮询、警报判定、机场统计
+│   │   ├── Feed.swift       并行拉取 adsb.lol / adsb.fi 并按 hex 合并
+│   │   ├── Core.swift       地理计算、机型分类、航空公司表
+│   │   ├── Notifier.swift   系统通知
+│   │   ├── Scheme.swift     app:// 静态资源 + radar:// 数据代理
+│   │   └── WidgetBridge.swift  与小组件共享快照
+│   ├── Widget/              WidgetKit 扩展（SwiftUI）
+│   └── Info.plist
+├── app/ui/                  面板前端
+│   ├── index.html           面板结构（地球 / 列表 / 机场榜 / 设置）
+│   ├── panel.css            暗色 + 青色霓虹设计系统
+│   ├── js/scene.js          Cesium 场景、图元、遮挡剔除、交互
+│   ├── js/panel.js          列表、设置、与原生通信
+│   ├── js/sources.js        ADS-B 拉取与合并
+│   ├── js/bridge.js         渲染层 ↔ 原生桥
+│   ├── js/util.js           格式化与地理工具
+│   ├── tex/stars.jpg        星空（替代 860 KB 的 SkyBox）
+│   └── assets/planes/       10 类机型图标
+├── scripts/                 构建、图标、贴图、冒烟脚本
+├── build/icon.icns
 └── release/Flight Radar.dmg
 ```
 
-### 三个必须由原生侧解决的事
-
-**1. 自定义协议（否则地球全黑）**
-Cesium 需要 Web Worker 与 ES Module。`file://` 的 origin 是 `null`，内核拒绝 Worker，
-影像瓦片解不出来。本项目注册了两个 scheme：
-
-* `app://local/` —— 把 `app/` 当本地静态站点；命中 `.gz` 且客户端接受 gzip 时直接下发
-  预压缩内容（`Cesium.js` 5.8 MB → 1.7 MB）
-* `radar://fetch/?url=…` —— 页面用普通 `fetch` 取 ADS-B 数据，由原生 `URLSession` 出网，
-  绕开 CORS；只放行 adsb.lol / adsb.fi 三个域名
-
-**2. 窗口必须真正显示**
-`WKWebView` 在不可见时不渲染。早期自检没显示窗口，导致帧循环停摆（`fps: 0`）、
-遮挡剔除不执行、`takeSnapshot` 只拿到首帧。现在自检同样会显示窗口。
-
-**3. CSP 要放行自定义 scheme**
-`script-src` 必须含 `blob:`（Cesium 的 worker），`connect-src` 必须含 `radar:`，
-否则数据请求会静默失败在 "Load failed"。
-
 ---
 
-## 快捷键
+## 几个踩过的坑（写下来省得再踩）
 
-| 键 | 功能 |
-| --- | --- |
-| `拖拽 / 滚轮 / 右键拖拽` | 旋转、缩放、倾斜地球 |
-| `单击飞机` | 打开航班详情 |
-| `双击飞机` | 锁定跟随 |
-| `⌘F` 或 `/` | 聚焦搜索框 |
-| `R` | 立即刷新 |
-| `空格` | 暂停 / 恢复自动刷新 |
-| `F` | 全屏 |
-| `1` `2` `3` | 卫星 / 暗色 / 纯地球 |
-| `Esc` | 取消选中 · 关闭弹层 |
+**1. 自定义协议是必需的，不是洁癖**
+Cesium 需要 Web Worker 与 ES Module。`file://` 的 origin 是 `null`，内核直接拒绝 Worker，
+影像瓦片解不出来（表现为地球全黑）。所以注册 `app://local` 当本地静态站点。
+CSP 里还必须放行 `script-src blob:`，否则 Cesium 的 worker 会被拦。
 
----
+**2. CSP 少一项，数据请求会静默失败**
+`connect-src` 不含 `radar:` 时，面板里的 fetch 全部报 `Load failed`，而且不会告诉你原因。
 
-## 打包
+**3. `WKWebView` 不显示就不渲染**
+自检时如果窗口没显示，帧循环会停摆（`fps: 0`）、截图只能拿到首帧。自检也必须把窗口显示出来。
+
+**4. 未签名的应用拿不到通知与小组件**
+`UNUserNotificationCenter` 授权会返回 `Notifications are not allowed for this application`，
+未签名的 WidgetKit 扩展则根本不会被 `pluginkit` 注册。这两项功能需要 Apple 开发者证书签名：
 
 ```bash
-npm run build
+codesign --force --sign "Developer ID Application: YOUR NAME (TEAMID)" \
+  --entitlements native/Widget/Widget.entitlements "build/Flight Radar.app/Contents/PlugIns/FlightRadarWidget.appex"
+codesign --force --sign "Developer ID Application: YOUR NAME (TEAMID)" "build/Flight Radar.app"
 ```
 
-产物：`release/Flight Radar.dmg`（5.9 MB，Apple Silicon，需 macOS 13+）。
+拍机警报在未签名时仍会在面板内提示（绿色 toast + 自动开面板），但不会进系统通知中心。
 
-体积构成：Cesium 运行时 11 MB（预压缩后实际下发 3.5 MB）→ DMG 用 UDZO + zlib level 9 压到 5.9 MB。
-原生可执行文件 180 KB，其余是 HTML/CSS/JS 与图标。
+---
 
-应用未做代码签名，首次打开需在**系统设置 → 隐私与安全性**放行，或：
+## 安装
 
 ```bash
+# 拖进 /Applications 后，如果 Gatekeeper 拦截：
 xattr -dr com.apple.quarantine "/Applications/Flight Radar.app"
 ```
+
+应用未做代码签名，属正常现象。
 
 ---
 

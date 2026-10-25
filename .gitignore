@@ -1,4 +1,5 @@
 node_modules/
+app/cesium/
 .build-cache/
 build/*
 !build/icon.icns

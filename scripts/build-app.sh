@@ -6,7 +6,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/build/Flight Radar.app"
 OUT="$ROOT/release"
 TARGET="arm64-apple-macos13.0"
-CACHE="$ROOT/.build-cache"
+CACHE="${TMPDIR:-/tmp}/fr-swift-cache"
 
 echo "[build] 编译主程序"
 mkdir -p "$ROOT/native/bin" "$CACHE"

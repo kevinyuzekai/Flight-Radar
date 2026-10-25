@@ -145,12 +145,12 @@
       terrainProvider: new C.EllipsoidTerrainProvider(),
       skyBox: new C.SkyBox({
         sources: {
-          positiveX: SKYBOX_DIR + 'px.jpg',
-          negativeX: SKYBOX_DIR + 'mx.jpg',
-          positiveY: SKYBOX_DIR + 'py.jpg',
-          negativeY: SKYBOX_DIR + 'my.jpg',
-          positiveZ: SKYBOX_DIR + 'pz.jpg',
-          negativeZ: SKYBOX_DIR + 'mz.jpg',
+          positiveX: 'tex/stars.jpg',
+          negativeX: 'tex/stars.jpg',
+          positiveY: 'tex/stars.jpg',
+          negativeY: 'tex/stars.jpg',
+          positiveZ: 'tex/stars.jpg',
+          negativeZ: 'tex/stars.jpg',
         },
       }),
     });

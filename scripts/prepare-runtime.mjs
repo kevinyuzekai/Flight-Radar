@@ -2,7 +2,6 @@
 /**
  * 准备原生应用的运行时资源：
  *   1. 从 node_modules/cesium 复制 Cesium 到 app/cesium（只保留运行时真正用到的部分）
- *   2. 给体积大的文本资源预压缩成 .gz（原生协议处理会优先下发 .gz）
  *
  * 裁剪依据：
  *   - index.cjs / index.js   是 ES module 入口（约 9MB），浏览器里用不到 → 不复制
@@ -31,11 +30,8 @@ fs.mkdirSync(dest, { recursive: true });
 const keep = [
   'Cesium.js',
   'Assets/approximateTerrainHeights.json',
-  'Assets/Textures/NaturalEarthII',
-  'Assets/Textures/SkyBox',
   'Assets/Textures/moonSmall.jpg',
   'Assets/Textures/waterNormalsSmall.jpg',
-  'Assets/Images',
   'Widgets/widgets.css',
   'Workers',
   'ThirdParty/Workers',
@@ -67,33 +63,6 @@ if (fs.existsSync(wdir)) {
   console.log(`[runtime] Workers 保留 ${all.length - removed}/${all.length}`);
 }
 
-/* 预压缩：文本类资源 gzip 后由原生协议以 Content-Encoding: gzip 下发 */
-function walk(dir, cb) {
-  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
-    const p = path.join(dir, e.name);
-    if (e.isDirectory()) walk(p, cb);
-    else cb(p);
-  }
-}
-
-const GZ_EXT = new Set(['.js', '.css', '.json', '.txt', '.xml', '.svg']);
-let gzCount = 0;
-let gzRaw = 0;
-let gzSmall = 0;
-
-walk(dest, (file) => {
-  const ext = path.extname(file).toLowerCase();
-  if (!GZ_EXT.has(ext)) return;
-  const raw = fs.readFileSync(file);
-  if (raw.length < 4096) return; // 太小的没必要压
-  const gz = zlib.gzipSync(raw, { level: 9 });
-  if (gz.length >= raw.length) return;
-  fs.writeFileSync(file + '.gz', gz);
-  gzCount += 1;
-  gzRaw += raw.length;
-  gzSmall += gz.length;
-});
-
 function dirSize(dir) {
   let total = 0;
   for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -104,14 +73,6 @@ function dirSize(dir) {
 }
 
 const mb = (n) => (n / 1048576).toFixed(2) + ' MB';
-console.log(`[runtime] 预压缩 ${gzCount} 个文本资源：${mb(gzRaw)} → ${mb(gzSmall)}`);
-console.log(`[runtime] app/cesium 体积（含 .gz 备份）：${mb(dirSize(dest))}`);
+console.log(`[runtime] app/cesium 体积：${mb(dirSize(dest))}`);
 
-/* 只统计运行时实际会下发的字节（.gz 优先） */
-let served = 0;
-walk(dest, (file) => {
-  if (file.endsWith('.gz')) return;
-  const gzPath = file + '.gz';
-  served += fs.existsSync(gzPath) ? fs.statSync(gzPath).size : fs.statSync(file).size;
-});
-console.log(`[runtime] 实际下发体积：${mb(served)}`);
+console.log(`[runtime] 完成`);

@@ -50,6 +50,7 @@
     const list = pl.planes || [];
     const overhead = list.filter((p) => p.distKm <= store.radiusKm).length;
     $('homeName').textContent = pl.homeName || '杭州';
+    if (sceneReady && pl.homeLat != null) FR.scene.setHome(pl.homeLat, pl.homeLon, pl.homeName);
     $('nearbyCount').textContent = list.length + ' 架附近' + (overhead ? ` · ${overhead} 架在头顶` : '');
     $('statusDot').className = 'dot' + (pl.ok && !pl.error ? '' : ' err');
   }

@@ -199,6 +199,8 @@
       });
     }
 
+    updateHomeMark(s, camNow);
+
     G.draw(s, out);
     state.lastSprites = out;
     state.lastCam = camNow;
@@ -206,6 +208,40 @@
     const dt = ts - lastTs;
     lastTs = ts;
     if (dt > 0) fps = fps * 0.9 + (1000 / dt) * 0.1;
+  }
+
+  function updateHomeMark(s, cam) {
+    const el = document.getElementById('homeMark');
+    if (!el) return;
+    const home = state.home;
+    const w = s.canvas.width, h = s.canvas.height;
+    let x, y, vis = true;
+    if (s.flat) {
+      x = ((home.lon + 180) / 360) * w;
+      y = ((90 - home.lat) / 180) * h;
+    } else {
+      const pt = GL.latLonToXYZ(home.lat, home.lon, 1);
+      vis = GL.isVisible(cam.eye, pt, 1.0);
+      const scr = vis ? GL.project(cam.vp, pt, w, h) : null;
+      if (!scr) vis = false; else { x = scr.x; y = scr.y; }
+    }
+    if (!vis) { el.classList.add('hidden'); return; }
+    el.classList.remove('hidden');
+    const scale = s.canvas.clientWidth / Math.max(1, w);
+    el.style.left = (x * scale) + 'px';
+    el.style.top = (y * scale) + 'px';
+    const label = document.getElementById('homeMarkLabel');
+    if (label) label.textContent = state.homeName || '观察点';
+  }
+
+  function setHome(lat, lon, name) {
+    if (!Number.isFinite(lat) || !Number.isFinite(lon)) return;
+    state.home = { lat, lon };
+    state.homeName = name || state.homeName;
+    if (state.globe) {
+      state.globe.targetLat = lat;
+      state.globe.targetLon = lon;
+    }
   }
 
   function startRenderLoop() {
@@ -374,6 +410,7 @@
       if (on) state.followHex = null;
     },
     get isFlat() { return !!(state.globe && state.globe.flat); },
+    setHome,
     get followHex() { return state.followHex; },
     get fps() { return Math.round(fps); },
   };

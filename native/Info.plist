@@ -5,8 +5,8 @@
   <key>CFBundleName</key><string>Flight Radar</string>
   <key>CFBundleDisplayName</key><string>Flight Radar</string>
   <key>CFBundleIdentifier</key><string>com.zekaiyu.flightradar</string>
-  <key>CFBundleVersion</key><string>0.2.4</string>
-  <key>CFBundleShortVersionString</key><string>0.2.4</string>
+  <key>CFBundleVersion</key><string>0.2.5</string>
+  <key>CFBundleShortVersionString</key><string>0.2.5</string>
   <key>CFBundleExecutable</key><string>FlightRadar</string>
   <key>CFBundleIconFile</key><string>AppIcon</string>
   <key>CFBundlePackageType</key><string>APPL</string>

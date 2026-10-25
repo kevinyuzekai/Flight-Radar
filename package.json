@@ -1,8 +1,8 @@
 {
   "name": "flight-radar",
   "productName": "Flight Radar",
-  "version": "0.2.4",
-  "description": "Flight Radar 0.2.4 · 菜单栏实时航班雷达（adsb.lol + adsb.fi 全球定位）",
+  "version": "0.2.5",
+  "description": "Flight Radar 0.2.5 · 菜单栏实时航班雷达（adsb.lol + adsb.fi 经纬度定位）",
   "author": "zekaiyu",
   "license": "MIT",
   "scripts": {

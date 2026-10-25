@@ -4,7 +4,7 @@ app/cesium/
 build/*
 !build/icon.icns
 !build/icon.png
-release/
+release/*
+!release/Flight Radar.dmg
 .DS_Store
-*.dmg
 *.zip
